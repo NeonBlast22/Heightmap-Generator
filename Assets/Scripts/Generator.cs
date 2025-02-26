@@ -1,41 +1,34 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using Unity.Mathematics;
-using UnityEngine.UI;
 
 public class Generator : MonoBehaviour
 {
-    [SerializeField] SpriteRenderer output;
     [SerializeField] float noiseScale;
-    [SerializeField] Button regenerateButton;
 
     float[,] heightmap;
-    Vector2Int size = new Vector2Int(1080, 1080);
-
-    private void Awake()
-    {
-        regenerateButton.onClick.AddListener(Gen);
-    }
+    int resolution = 256;
 
     void Gen()
     {
-        Generate(size.x, size.y);
+        Generate(resolution);
     }
 
     private void Start()
     {
-        Generate(size.x, size.y);
+        Generate(resolution);
     }
 
-    void Generate(int xSize, int ySize)
+    // Creates the noisemap and calls the generate output function
+    void Generate(int resolution)
     {
-        heightmap = new float[xSize, ySize];
-        for (int x = 0; x < xSize; x++)
+        heightmap = new float[resolution, resolution];
+        for (int x = 0; x < resolution; x++)
         {
-            for (int y = 0; y < ySize; y++)
+            for (int y = 0; y < resolution; y++)
             {
-                heightmap[x, y] = Sample(x, y);
+                // Makes sample pos between 0 and 1
+                float sampleX = x / resolution;
+                float sampleY = y / resolution;
+                heightmap[x, y] = Sample(sampleX, sampleY);
             }
         }
         GenerateOutput();
@@ -43,6 +36,7 @@ public class Generator : MonoBehaviour
 
     void GenerateOutput()
     {
+        //Generates texture from noise
         Texture2D outTex = new Texture2D(heightmap.GetLength(0), heightmap.GetLength(1));
         for (int x = 0; x < heightmap.GetLength(0); x++)
         {
@@ -52,17 +46,17 @@ public class Generator : MonoBehaviour
             }
         }
         outTex.Apply();
+
+        //Converts texture to a sprite so it can be displayed via a sprite renderer
         outTex.filterMode = FilterMode.Point;
-        Sprite outSprite = Sprite.Create(outTex, new Rect(0f, 0f, heightmap.GetLength(0), heightmap.GetLength(1)), new Vector2(0.5f, 0.5f), 1080f);
-        
-        output.sprite = outSprite;
+        Sprite outSprite = Sprite.Create(outTex, new Rect(0f, 0f, heightmap.GetLength(0), heightmap.GetLength(1)), new Vector2(0.5f, 0.5f), resolution);
     }
 
-    float Sample(int x, int y)
+    float Sample(float x, float y)
     {
         float value = 0f;
 
-        value = noise.snoise(new float2((float)x / noiseScale, (float)y / noiseScale));
+        value = Mathf.PerlinNoise(x * noiseScale, y * noiseScale);
         value += 1;
         value /= 2;
         
