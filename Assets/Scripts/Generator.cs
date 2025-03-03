@@ -2,19 +2,24 @@ using UnityEngine;
 
 public class Generator : MonoBehaviour
 {
+    [Header("Generator Settings")]
     [SerializeField] float noiseScale;
 
-    float[,] heightmap;
-    int resolution = 256;
+    [Header("Quality Settings")]
+    [SerializeField] int previewResolution;
+    [SerializeField] int exportResolution;
 
-    void Gen()
+    SpriteRenderer spriteRenderer;
+    float[,] heightmap;
+
+    private void Awake()
     {
-        Generate(resolution);
+        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
     }
 
-    private void Start()
+    private void Update()
     {
-        Generate(resolution);
+        Generate(previewResolution);
     }
 
     // Creates the noisemap and calls the generate output function
@@ -26,15 +31,15 @@ public class Generator : MonoBehaviour
             for (int y = 0; y < resolution; y++)
             {
                 // Makes sample pos between 0 and 1
-                float sampleX = x / resolution;
-                float sampleY = y / resolution;
+                float sampleX = (float)x / resolution;
+                float sampleY = (float)y / resolution;
                 heightmap[x, y] = Sample(sampleX, sampleY);
             }
         }
-        GenerateOutput();
+        GenerateOutput(resolution);
     }
 
-    void GenerateOutput()
+    void GenerateOutput(int resolution)
     {
         //Generates texture from noise
         Texture2D outTex = new Texture2D(heightmap.GetLength(0), heightmap.GetLength(1));
@@ -50,6 +55,7 @@ public class Generator : MonoBehaviour
         //Converts texture to a sprite so it can be displayed via a sprite renderer
         outTex.filterMode = FilterMode.Point;
         Sprite outSprite = Sprite.Create(outTex, new Rect(0f, 0f, heightmap.GetLength(0), heightmap.GetLength(1)), new Vector2(0.5f, 0.5f), resolution);
+        spriteRenderer.sprite = outSprite;
     }
 
     float Sample(float x, float y)
