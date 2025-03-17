@@ -3,11 +3,14 @@ using UnityEngine;
 public class Generator : MonoBehaviour
 {
     [Header("Generator Settings")]
-    [SerializeField] float noiseScale;
+    public float noiseScale;
+    public int octaves;
+    public float lacunarity;
+    public float persistance;
 
     [Header("Quality Settings")]
-    [SerializeField] int previewResolution;
-    [SerializeField] int exportResolution;
+    public int previewResolution;
+    public int exportResolution;
 
     SpriteRenderer spriteRenderer;
     float[,] heightmap;
@@ -61,11 +64,21 @@ public class Generator : MonoBehaviour
     float Sample(float x, float y)
     {
         float value = 0f;
-
-        value = Mathf.PerlinNoise(x * noiseScale, y * noiseScale);
-        value += 1;
-        value /= 2;
+        float amplitude = 1f;
+        float frequency = 1f;
         
-        return value;
+        for (int octave = 0; octave < octaves; octave++)
+        {
+            float sampleX = x / noiseScale * frequency;
+            float sampleY = y / noiseScale * frequency;
+
+            float perlin = (Mathf.PerlinNoise(sampleX, sampleY) * 2) - 1;
+            value += perlin * amplitude;
+            amplitude *= persistance;
+            frequency *= lacunarity;
+        }
+        
+        value = Mathf.Clamp(value, -1f, 1f);
+        return (value + 1f) / 2f;
     }
 }
