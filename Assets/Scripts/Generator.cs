@@ -13,22 +13,36 @@ public class Generator : MonoBehaviour
     public int exportResolution;
 
     SpriteRenderer spriteRenderer;
+    Exporter exporter;
     float[,] heightmap;
 
     private void Awake()
     {
+        exporter = GetComponent<Exporter>();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
     }
 
     private void Update()
     {
-        Generate(previewResolution);
+        heightmap = Generate(previewResolution);
+        Texture2D outTex = GenerateTexture(heightmap);
+        //Converts texture to a sprite so it can be displayed via a sprite renderer
+        outTex.filterMode = FilterMode.Point;
+        Sprite outSprite = Sprite.Create(outTex, new Rect(0f, 0f, heightmap.GetLength(0), heightmap.GetLength(1)), new Vector2(0.5f, 0.5f), previewResolution);
+        spriteRenderer.sprite = outSprite;
+    }
+
+    public void GenerateHighResOutput()
+    {
+        heightmap = Generate(exportResolution);
+        Texture2D outTex = GenerateTexture(heightmap);
+        exporter.Export(outTex);
     }
 
     // Creates the noisemap and calls the generate output function
-    void Generate(int resolution)
+    float[,] Generate(int resolution)
     {
-        heightmap = new float[resolution, resolution];
+        float[,] generatedHeightmap = new float[resolution, resolution];
         for (int x = 0; x < resolution; x++)
         {
             for (int y = 0; y < resolution; y++)
@@ -39,46 +53,45 @@ public class Generator : MonoBehaviour
                 heightmap[x, y] = Sample(sampleX, sampleY);
             }
         }
-        GenerateOutput(resolution);
+        return generatedHeightmap;
     }
 
-    void GenerateOutput(int resolution)
+    Texture2D GenerateTexture(float[,] texHeightmap)
     {
-        //Generates texture from noise
-        Texture2D outTex = new Texture2D(heightmap.GetLength(0), heightmap.GetLength(1));
-        for (int x = 0; x < heightmap.GetLength(0); x++)
+        //Generates texture from the heightmap
+        Texture2D outTex = new Texture2D(texHeightmap.GetLength(0), texHeightmap.GetLength(1));
+        for (int x = 0; x < texHeightmap.GetLength(0); x++)
         {
-            for (int y = 0; y < heightmap.GetLength(1); y++)
+            for (int y = 0; y < texHeightmap.GetLength(1); y++)
             {
-                outTex.SetPixel(x, y, new Color(heightmap[x, y], heightmap[x, y], heightmap[x, y], 1f));
+                outTex.SetPixel(x, y, new Color(texHeightmap[x, y], texHeightmap[x, y], texHeightmap[x, y], 1f));
             }
         }
         outTex.Apply();
-
-        //Converts texture to a sprite so it can be displayed via a sprite renderer
-        outTex.filterMode = FilterMode.Point;
-        Sprite outSprite = Sprite.Create(outTex, new Rect(0f, 0f, heightmap.GetLength(0), heightmap.GetLength(1)), new Vector2(0.5f, 0.5f), resolution);
-        spriteRenderer.sprite = outSprite;
+        return outTex;
+        
     }
 
     float Sample(float x, float y)
     {
         float value = 0f;
+
         float amplitude = 1f;
         float frequency = 1f;
         
         for (int octave = 0; octave < octaves; octave++)
         {
+            //for each octave add to the perlin noise value and change the amplitude and frequency for the next octave
             float sampleX = x / noiseScale * frequency;
             float sampleY = y / noiseScale * frequency;
 
-            float perlin = (Mathf.PerlinNoise(sampleX, sampleY) * 2) - 1;
+            float perlin = (Mathf.PerlinNoise(sampleX, sampleY) * 2) - 1; //Makes the noise from 0 - 1 to -1 to 1
             value += perlin * amplitude;
             amplitude *= persistance;
             frequency *= lacunarity;
         }
         
         value = Mathf.Clamp(value, -1f, 1f);
-        return (value + 1f) / 2f;
+        return (value + 1f) / 2f; // Puts the noise back to 0 - 1 from -1 to 1
     }
 }

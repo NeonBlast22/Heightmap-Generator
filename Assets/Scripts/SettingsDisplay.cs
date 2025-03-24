@@ -32,8 +32,10 @@ public class SettingsDisplay : MonoBehaviour
         settings = new List<Setting>();
         foreach (Transform child in transform)
         {
+
             TMP_Text valueDisplay = child.GetChild(0).GetComponent<TMP_Text>();
             Slider slider = child.GetComponentInChildren<Slider>();
+            if (slider != null)
             settings.Add(new Setting(valueDisplay, slider, child.name, slider.wholeNumbers));
         }
     }
