@@ -50,7 +50,7 @@ public class Generator : MonoBehaviour
                 // Makes sample pos between 0 and 1
                 float sampleX = (float)x / resolution;
                 float sampleY = (float)y / resolution;
-                heightmap[x, y] = Sample(sampleX, sampleY);
+                generatedHeightmap[x, y] = Sample(sampleX, sampleY);
             }
         }
         return generatedHeightmap;
