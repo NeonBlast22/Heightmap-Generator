@@ -66,6 +66,9 @@ public class SettingsDisplay : MonoBehaviour
                 case "Export Resolution":
                     generator.exportResolution = Mathf.RoundToInt(setting.slider.value);
                     break;
+                case "Falloff":
+                    generator.falloff = setting.slider.value;
+                    break;
             }
         }
     }

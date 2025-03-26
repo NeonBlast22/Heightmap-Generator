@@ -7,6 +7,7 @@ public class Generator : MonoBehaviour
     public int octaves;
     public float lacunarity;
     public float persistance;
+    public float falloff;
 
     [Header("Quality Settings")]
     public int previewResolution;
@@ -90,8 +91,19 @@ public class Generator : MonoBehaviour
             amplitude *= persistance;
             frequency *= lacunarity;
         }
-        
         value = Mathf.Clamp(value, -1f, 1f);
-        return (value + 1f) / 2f; // Puts the noise back to 0 - 1 from -1 to 1
+        return ((value + 1f) / 2f) * CalculateFalloff(x, y); // Puts the noise back to 0 - 1 from -1 to 1
+    }
+
+    float CalculateFalloff(float x, float y)
+    {
+        float distanceToCenter = Vector2.Distance(new Vector2(0.5f, 0.5f), new Vector2(x, y));
+        float maxDistanceToCenter = Mathf.Sqrt(0.5f);
+        float distanceScalar = distanceToCenter / maxDistanceToCenter;
+        distanceScalar *= falloff;
+        distanceScalar *= -1;
+        distanceScalar += 1;
+        distanceScalar = Mathf.Clamp(distanceScalar, 0f, 1f);
+        return distanceScalar;
     }
 }
