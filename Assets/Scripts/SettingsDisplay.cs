@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,6 +23,9 @@ public struct Setting
 
 public class SettingsDisplay : MonoBehaviour
 {
+    [SerializeField] TMP_InputField exportResInput;
+    [SerializeField] TMP_Text exportResOutText;
+
     Generator generator;
     List<Setting> settings;
 
@@ -42,6 +46,12 @@ public class SettingsDisplay : MonoBehaviour
 
     private void Update()
     {
+        exportResOutText.text = "X " + exportResInput.text;
+        if (int.TryParse(exportResInput.text, out int res))
+        {
+            generator.exportResolution = res;
+        }
+
         foreach (Setting setting in settings)
         {
             setting.valueDisplay.text = (Mathf.Round(setting.slider.value * 10f)/ 10f).ToString();
@@ -62,9 +72,6 @@ public class SettingsDisplay : MonoBehaviour
                     break;
                 case "Preview Resolution":
                     generator.previewResolution = Mathf.RoundToInt(setting.slider.value);
-                    break;
-                case "Export Resolution":
-                    generator.exportResolution = Mathf.RoundToInt(setting.slider.value);
                     break;
                 case "Falloff":
                     generator.falloff = setting.slider.value;
