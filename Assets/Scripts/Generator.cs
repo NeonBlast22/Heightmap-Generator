@@ -1,3 +1,5 @@
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Generator : MonoBehaviour
@@ -17,6 +19,8 @@ public class Generator : MonoBehaviour
     Exporter exporter;
     float[,] heightmap;
 
+    string exportText = "";
+    bool highResExporting = false;
     struct NoiseGenSettings
     {
         public float noiseScale;
@@ -49,6 +53,8 @@ public class Generator : MonoBehaviour
         outTex.filterMode = FilterMode.Point;
         Sprite outSprite = Sprite.Create(outTex, new Rect(0f, 0f, heightmap.GetLength(0), heightmap.GetLength(1)), new Vector2(0.5f, 0.5f), previewResolution);
         spriteRenderer.sprite = outSprite;
+
+        if (highResExporting) exporter.outputLog.text = exportText;
     }
 
 
@@ -60,9 +66,13 @@ public class Generator : MonoBehaviour
     }
 
     // Creates the noisemap and calls the generate output function
-    float[,] Generate(int resolution, NoiseGenSettings settings)
+    float[,] Generate(int resolution, NoiseGenSettings settings, bool log = false)
     {
         float[,] generatedHeightmap = new float[resolution, resolution];
+
+        int pixelsToRun = resolution * resolution;
+        int currentPixel = 0;
+
         for (int x = 0; x < resolution; x++)
         {
             for (int y = 0; y < resolution; y++)
@@ -70,7 +80,13 @@ public class Generator : MonoBehaviour
                 // Makes sample pos between 0 and 1
                 float sampleX = (float)x / resolution;
                 float sampleY = (float)y / resolution;
-                generatedHeightmap[x, y] = Sample(sampleX, sampleY);
+                generatedHeightmap[x, y] = Sample(sampleX, sampleY, settings);
+                currentPixel++;
+                if (log)
+                {
+                    int progressPercentage = Mathf.RoundToInt((float)currentPixel / pixelsToRun * 100);
+                    exportText = $"Export Progress: {progressPercentage}%";
+                }
             }
         }
         return generatedHeightmap;
@@ -78,9 +94,11 @@ public class Generator : MonoBehaviour
 
     async Awaitable<float[,]> GenerateAsync(int resolution)
     {
+        highResExporting = true;
         await Awaitable.BackgroundThreadAsync();
-        float[,] output = Generate(resolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff));
+        float[,] output = Generate(resolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff), true);
         await Awaitable.MainThreadAsync();
+        highResExporting = false;
         return output;
     }
 
@@ -100,34 +118,34 @@ public class Generator : MonoBehaviour
         
     }
 
-    float Sample(float x, float y)
+    float Sample(float x, float y, NoiseGenSettings noiseGenSettings)
     {
         float value = 0f;
 
         float amplitude = 1f;
         float frequency = 1f;
         
-        for (int octave = 0; octave < octaves; octave++)
+        for (int octave = 0; octave < noiseGenSettings.octaves; octave++)
         {
             //for each octave add to the perlin noise value and change the amplitude and frequency for the next octave
-            float sampleX = x / noiseScale * frequency;
-            float sampleY = y / noiseScale * frequency;
+            float sampleX = x / noiseGenSettings.noiseScale * frequency;
+            float sampleY = y / noiseGenSettings.noiseScale * frequency;
 
             float perlin = (Mathf.PerlinNoise(sampleX, sampleY) * 2) - 1; //Makes the noise from 0 - 1 to -1 to 1
             value += perlin * amplitude;
-            amplitude *= persistance;
-            frequency *= lacunarity;
+            amplitude *= noiseGenSettings.persistance;
+            frequency *= noiseGenSettings.lacunarity;
         }
         value = Mathf.Clamp(value, -1f, 1f);
-        return ((value + 1f) / 2f) * CalculateFalloff(x, y); // Puts the noise back to 0 - 1 from -1 to 1
+        return ((value + 1f) / 2f) * CalculateFalloff(x, y, noiseGenSettings); // Puts the noise back to 0 - 1 from -1 to 1
     }
 
-    float CalculateFalloff(float x, float y)
+    float CalculateFalloff(float x, float y, NoiseGenSettings noiseGenSettings)
     {
         float distanceToCenter = Vector2.Distance(new Vector2(0.5f, 0.5f), new Vector2(x, y));
         float maxDistanceToCenter = Mathf.Sqrt(0.5f);
         float distanceScalar = distanceToCenter / maxDistanceToCenter;
-        distanceScalar *= falloff;
+        distanceScalar *= noiseGenSettings.falloff;
         distanceScalar *= -1;
         distanceScalar += 1;
         distanceScalar = Mathf.Clamp(distanceScalar, 0f, 1f);

@@ -5,7 +5,7 @@ using TMPro;
 
 public class Exporter : MonoBehaviour
 {
-    [SerializeField] TMP_Text outputLog;
+    public TMP_Text outputLog;
     string path;
 
     private void Start()
