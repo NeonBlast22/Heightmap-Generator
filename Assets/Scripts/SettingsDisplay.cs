@@ -31,7 +31,7 @@ public class SettingsDisplay : MonoBehaviour
 
     private void Awake()
     {
-        generator = FindObjectOfType<Generator>();
+        generator = FindAnyObjectByType<Generator>();
 
         settings = new List<Setting>();
         foreach (Transform child in transform)

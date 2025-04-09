@@ -17,6 +17,24 @@ public class Generator : MonoBehaviour
     Exporter exporter;
     float[,] heightmap;
 
+    struct NoiseGenSettings
+    {
+        public float noiseScale;
+        public int octaves;
+        public float lacunarity;
+        public float persistance;
+        public float falloff;
+
+        public NoiseGenSettings(float noiseScale, int octaves, float lacunarity, float persistance, float falloff)
+        {
+            this.noiseScale = noiseScale;
+            this.octaves = octaves;
+            this.lacunarity = lacunarity;
+            this.persistance = persistance;
+            this.falloff = falloff;
+        }
+    }
+
     private void Awake()
     {
         exporter = GetComponent<Exporter>();
@@ -25,7 +43,7 @@ public class Generator : MonoBehaviour
 
     private void Update()
     {
-        heightmap = Generate(previewResolution);
+        heightmap = Generate(previewResolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff));
         Texture2D outTex = GenerateTexture(heightmap);
         //Converts texture to a sprite so it can be displayed via a sprite renderer
         outTex.filterMode = FilterMode.Point;
@@ -33,15 +51,16 @@ public class Generator : MonoBehaviour
         spriteRenderer.sprite = outSprite;
     }
 
-    public void GenerateHighResOutput()
+
+    public async void GenerateHighResOutputAsync()
     {
-        heightmap = Generate(exportResolution);
+        heightmap = await GenerateAsync(exportResolution);
         Texture2D outTex = GenerateTexture(heightmap);
         exporter.Export(outTex);
     }
 
     // Creates the noisemap and calls the generate output function
-    float[,] Generate(int resolution)
+    float[,] Generate(int resolution, NoiseGenSettings settings)
     {
         float[,] generatedHeightmap = new float[resolution, resolution];
         for (int x = 0; x < resolution; x++)
@@ -55,6 +74,14 @@ public class Generator : MonoBehaviour
             }
         }
         return generatedHeightmap;
+    }
+
+    async Awaitable<float[,]> GenerateAsync(int resolution)
+    {
+        await Awaitable.BackgroundThreadAsync();
+        float[,] output = Generate(resolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff));
+        await Awaitable.MainThreadAsync();
+        return output;
     }
 
     Texture2D GenerateTexture(float[,] texHeightmap)
