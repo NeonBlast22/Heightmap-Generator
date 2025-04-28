@@ -50,7 +50,7 @@ public class Generator : MonoBehaviour
         heightmap = Generate(previewResolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff));
         Texture2D outTex = GenerateTexture(heightmap);
         //Converts texture to a sprite so it can be displayed via a sprite renderer
-        outTex.filterMode = FilterMode.Point;
+        outTex.filterMode = FilterMode.Point; //Makes sure its not blurry
         Sprite outSprite = Sprite.Create(outTex, new Rect(0f, 0f, heightmap.GetLength(0), heightmap.GetLength(1)), new Vector2(0.5f, 0.5f), previewResolution);
         spriteRenderer.sprite = outSprite;
 
@@ -60,6 +60,7 @@ public class Generator : MonoBehaviour
 
     public async void GenerateHighResOutputAsync()
     {
+        if (highResExporting) return; //make sure multiple exports are not going on at once
         heightmap = await GenerateAsync(exportResolution);
         Texture2D outTex = GenerateTexture(heightmap);
         exporter.Export(outTex);
@@ -77,13 +78,15 @@ public class Generator : MonoBehaviour
         {
             for (int y = 0; y < resolution; y++)
             {
-                // Makes sample pos between 0 and 1
+                // Makes sample pos between 0 and 1 so that resoltion doesnt affect results
                 float sampleX = (float)x / resolution;
                 float sampleY = (float)y / resolution;
                 generatedHeightmap[x, y] = Sample(sampleX, sampleY, settings);
                 currentPixel++;
+
                 if (log)
                 {
+                    //Gets the completion progress
                     int progressPercentage = Mathf.RoundToInt((float)currentPixel / pixelsToRun * 100);
                     exportText = $"Export Progress: {progressPercentage}%";
                 }
@@ -95,8 +98,13 @@ public class Generator : MonoBehaviour
     async Awaitable<float[,]> GenerateAsync(int resolution)
     {
         highResExporting = true;
+
+        //Switches to the background thread
         await Awaitable.BackgroundThreadAsync();
+
         float[,] output = Generate(resolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff), true);
+
+        //Returns to the main thread
         await Awaitable.MainThreadAsync();
         highResExporting = false;
         return output;
@@ -110,6 +118,7 @@ public class Generator : MonoBehaviour
         {
             for (int y = 0; y < texHeightmap.GetLength(1); y++)
             {
+                //Writes the pixels from the heightmap to the texture
                 outTex.SetPixel(x, y, new Color(texHeightmap[x, y], texHeightmap[x, y], texHeightmap[x, y], 1f));
             }
         }
@@ -118,6 +127,7 @@ public class Generator : MonoBehaviour
         
     }
 
+    //Samples a point between x 0 - 1 and y 0 - 1 and returns a noise value between 0 - 1
     float Sample(float x, float y, NoiseGenSettings noiseGenSettings)
     {
         float value = 0f;
@@ -140,6 +150,7 @@ public class Generator : MonoBehaviour
         return ((value + 1f) / 2f) * CalculateFalloff(x, y, noiseGenSettings); // Puts the noise back to 0 - 1 from -1 to 1
     }
 
+    //Makes points further from the centre lower
     float CalculateFalloff(float x, float y, NoiseGenSettings noiseGenSettings)
     {
         float distanceToCenter = Vector2.Distance(new Vector2(0.5f, 0.5f), new Vector2(x, y));

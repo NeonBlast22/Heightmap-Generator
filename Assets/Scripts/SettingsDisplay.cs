@@ -36,7 +36,7 @@ public class SettingsDisplay : MonoBehaviour
         settings = new List<Setting>();
         foreach (Transform child in transform)
         {
-
+            //Automatically find all the sliders
             TMP_Text valueDisplay = child.GetChild(0).GetComponent<TMP_Text>();
             Slider slider = child.GetComponentInChildren<Slider>();
             if (slider != null)
@@ -46,6 +46,7 @@ public class SettingsDisplay : MonoBehaviour
 
     private void Update()
     {
+        //Converts the res input to an int and sets it the the export resolution
         exportResOutText.text = "X " + exportResInput.text;
         if (int.TryParse(exportResInput.text, out int res))
         {
@@ -55,6 +56,8 @@ public class SettingsDisplay : MonoBehaviour
         foreach (Setting setting in settings)
         {
             setting.valueDisplay.text = (Mathf.Round(setting.slider.value * 10f)/ 10f).ToString();
+
+            //Matches the slider to its relevant setting
 
             switch (setting.title)
             {

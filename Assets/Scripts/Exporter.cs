@@ -10,6 +10,8 @@ public class Exporter : MonoBehaviour
 
     private void Start()
     {
+        //Finds the path of the users download folder
+
         string downloadsPath = "";
         #if UNITY_ANDROID && !UNITY_EDITOR
                 downloadsPath = "/storage/emulated/0/Download/";
@@ -27,6 +29,7 @@ public class Exporter : MonoBehaviour
         string filePath = path + $"\\Export {date}.png";
         if (File.Exists(filePath))
         {
+            //Finds first available filename that isnt being used
             int i = 1;
             while (File.Exists(path + $"\\Export {date} {i}.png"))
             {
@@ -39,6 +42,7 @@ public class Exporter : MonoBehaviour
             }
             filePath = path + $"\\Export {date} {i}.png";
         }
+
         File.WriteAllBytes(filePath, texture.EncodeToPNG());
         outputLog.text = $"Saved Export at {filePath}";
     }
