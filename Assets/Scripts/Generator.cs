@@ -10,6 +10,7 @@ public class Generator : MonoBehaviour
     public float lacunarity;
     public float persistance;
     public float falloff;
+    public Vector2 seed = Vector2.zero;
 
     [Header("Quality Settings")]
     public int previewResolution;
@@ -28,14 +29,16 @@ public class Generator : MonoBehaviour
         public float lacunarity;
         public float persistance;
         public float falloff;
+        public Vector2 seed;
 
-        public NoiseGenSettings(float noiseScale, int octaves, float lacunarity, float persistance, float falloff)
+        public NoiseGenSettings(float noiseScale, int octaves, float lacunarity, float persistance, float falloff, Vector2 seed)
         {
             this.noiseScale = noiseScale;
             this.octaves = octaves;
             this.lacunarity = lacunarity;
             this.persistance = persistance;
             this.falloff = falloff;
+            this.seed = seed;
         }
     }
 
@@ -45,9 +48,16 @@ public class Generator : MonoBehaviour
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
     }
 
+    public void RandomiseSeed()
+    {
+        float x = Random.Range(-9999f, 9999f);
+        float y = Random.Range(-9999f, 9999f);
+        seed = new Vector2(x, y);
+    }
+
     private void Update()
     {
-        heightmap = Generate(previewResolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff));
+        heightmap = Generate(previewResolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff, seed));
         Texture2D outTex = GenerateTexture(heightmap);
         //Converts texture to a sprite so it can be displayed via a sprite renderer
         outTex.filterMode = FilterMode.Point; //Makes sure its not blurry
@@ -65,6 +75,7 @@ public class Generator : MonoBehaviour
         Texture2D outTex = GenerateTexture(heightmap);
         exporter.Export(outTex);
     }
+
 
     // Creates the noisemap and calls the generate output function
     float[,] Generate(int resolution, NoiseGenSettings settings, bool log = false)
@@ -102,7 +113,7 @@ public class Generator : MonoBehaviour
         //Switches to the background thread
         await Awaitable.BackgroundThreadAsync();
 
-        float[,] output = Generate(resolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff), true);
+        float[,] output = Generate(resolution, new NoiseGenSettings(noiseScale, octaves, lacunarity, persistance, falloff, seed), true);
 
         //Returns to the main thread
         await Awaitable.MainThreadAsync();
@@ -138,8 +149,8 @@ public class Generator : MonoBehaviour
         for (int octave = 0; octave < noiseGenSettings.octaves; octave++)
         {
             //for each octave add to the perlin noise value and change the amplitude and frequency for the next octave
-            float sampleX = x / noiseGenSettings.noiseScale * frequency;
-            float sampleY = y / noiseGenSettings.noiseScale * frequency;
+            float sampleX = (x + noiseGenSettings.seed.x) / noiseGenSettings.noiseScale * frequency;
+            float sampleY = (y + noiseGenSettings.seed.y) / noiseGenSettings.noiseScale * frequency;
 
             float perlin = (Mathf.PerlinNoise(sampleX, sampleY) * 2) - 1; //Makes the noise from 0 - 1 to -1 to 1
             value += perlin * amplitude;
