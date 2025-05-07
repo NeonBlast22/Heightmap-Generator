@@ -90,8 +90,8 @@ public class Generator : MonoBehaviour
             for (int y = 0; y < resolution; y++)
             {
                 // Makes sample pos between 0 and 1 so that resoltion doesnt affect results
-                float sampleX = (float)x / resolution;
-                float sampleY = (float)y / resolution;
+                float sampleX = ((float)x + 0.5f) / resolution;
+                float sampleY = ((float)y + 0.5f) / resolution;
                 generatedHeightmap[x, y] = Sample(sampleX, sampleY, settings);
                 currentPixel++;
 
@@ -149,8 +149,8 @@ public class Generator : MonoBehaviour
         for (int octave = 0; octave < noiseGenSettings.octaves; octave++)
         {
             //for each octave add to the perlin noise value and change the amplitude and frequency for the next octave
-            float sampleX = (x + noiseGenSettings.seed.x) / noiseGenSettings.noiseScale * frequency;
-            float sampleY = (y + noiseGenSettings.seed.y) / noiseGenSettings.noiseScale * frequency;
+            float sampleX = x / noiseGenSettings.noiseScale * frequency + noiseGenSettings.seed.x;
+            float sampleY = y / noiseGenSettings.noiseScale * frequency + noiseGenSettings.seed.y;
 
             float perlin = (Mathf.PerlinNoise(sampleX, sampleY) * 2) - 1; //Makes the noise from 0 - 1 to -1 to 1
             value += perlin * amplitude;
